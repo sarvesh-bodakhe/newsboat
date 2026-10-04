@@ -1372,7 +1372,38 @@ StflRichText KeyMap::prepare_keymap_hint(const std::vector<KeyMapHintEntry>& hin
 
 	auto keymap_hint = StflRichText::from_plaintext("");
 	bool first_hint = true;
+
+	// Single-key `bind`s with a description (`bind M article ... -- "Miniflux"`)
+	// are hinted too, just before Help (or at the end if there's no Help).
+	bool binds_hinted = false;
+	const auto hint_binds = [&]() {
+		binds_hinted = true;
+		const auto keymap = context_keymaps.find(context);
+		if (keymap == context_keymaps.end()) {
+			return;
+		}
+		for (const auto& [key, mapping] : keymap->second.continuations) {
+			if (!mapping.is_leaf_node || mapping.binding_type != BindingType::Bind
+				|| mapping.action.description.empty()) {
+				continue;
+			}
+			if (!first_hint) {
+				keymap_hint.append(StflRichText::from_plaintext(" "));
+			}
+			first_hint = false;
+			keymap_hint.append(StflRichText::from_plaintext_with_style(key.to_bindkey_string(),
+					"<key>"));
+			keymap_hint.append(colon);
+			keymap_hint.append(StflRichText::from_plaintext_with_style(
+					mapping.action.description, "<desc>"));
+		}
+	};
+
 	for (const auto& hint : hints) {
+		if (hint.op == OP_HELP && !binds_hinted) {
+			hint_binds();
+		}
+
 		const std::vector<KeyCombination> bound_keys = get_keys(hint.op, context);
 		if (bound_keys.empty()) {
 			continue;
@@ -1396,6 +1427,9 @@ StflRichText KeyMap::prepare_keymap_hint(const std::vector<KeyMapHintEntry>& hin
 
 		keymap_hint.append(colon);
 		keymap_hint.append(StflRichText::from_plaintext_with_style(hint.text, "<desc>"));
+	}
+	if (!binds_hinted) {
+		hint_binds();
 	}
 	return keymap_hint;
 }
