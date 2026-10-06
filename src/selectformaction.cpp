@@ -147,11 +147,10 @@ void SelectFormAction::prepare()
 			render_line = [this, selecttag_format](std::uint32_t line,
 			std::uint32_t width) -> StflRichText {
 				const auto& tag = tags[line];
-				return StflRichText::from_plaintext(
-					format_line(selecttag_format,
-						tag,
-						line + 1,
-						width));
+				return format_line(selecttag_format,
+					tag,
+					line + 1,
+					width);
 			};
 			break;
 		case SelectionType::FILTER:
@@ -194,7 +193,7 @@ void SelectFormAction::init()
 	set_keymap_hints();
 }
 
-std::string SelectFormAction::format_line(const std::string& selecttag_format,
+StflRichText SelectFormAction::format_line(const std::string& selecttag_format,
 	const std::string& tag,
 	unsigned int pos,
 	unsigned int width)
@@ -215,9 +214,11 @@ std::string SelectFormAction::format_line(const std::string& selecttag_format,
 	fmt.register_fmt('n', std::to_string(unread_articles));
 	fmt.register_fmt('u', std::to_string(total_feeds));
 
-	auto formattedLine = fmt.do_format(selecttag_format, width);
+	const auto formattedLine = fmt.do_format(selecttag_format, width);
 
-	return formattedLine;
+	return unread_articles > 0
+		? StflRichText::from_plaintext_with_style(formattedLine, "<unread>")
+		: StflRichText::from_plaintext(formattedLine);
 }
 
 void SelectFormAction::update_heading()

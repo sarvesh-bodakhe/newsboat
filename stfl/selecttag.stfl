@@ -6,6 +6,8 @@ vbox
   @info#style_colon_normal[hint-separator]:
   @info#style_desc_normal[hint-description]:
   @title#style_normal[title]:
+  @style_unread_normal[listnormal_unread]:
+  @style_unread_focus[listfocus_unread]:
   label#title[title]
     text[head]:""
     .expand:h
